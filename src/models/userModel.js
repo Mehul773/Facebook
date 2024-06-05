@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const mongoosePaginate = require("mongoose-paginate-v2");
 
 const userSchema = mongoose.Schema({
   name: String,
@@ -38,6 +39,8 @@ userSchema.methods.generateAuthToken = async function () {
     return resizeBy.status(500).json(error);
   }
 };
+
+userSchema.plugin(mongoosePaginate);
 
 const userModel = mongoose.model("Facebook", userSchema);
 module.exports = userModel;

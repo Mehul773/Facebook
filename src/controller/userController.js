@@ -111,11 +111,15 @@ const getAllFriendRequest = async (req, res) => {
       user.friendRequest.sort((a, b) => a.name.localeCompare(b.name));
     else if (sort === "email")
       user.friendRequest.sort((a, b) => a.email.localeCompare(b.email));
+    else if (sort == "-name")
+      user.friends.sort((a, b) => b.name.localeCompare(a.name));
+    else if (sort == "-email")
+      user.friends.sort((a, b) => b.email.localeCompare(a.email));
 
     //pagination
-    const friends = user.friendRequest.slice(skip, skip + limit);
+    const friendRequest = user.friendRequest.slice(skip, skip + limit);
 
-    return res.status(200).json({ name: user.name, friends });
+    return res.status(200).json({ name: user.name, friendRequest });
   } catch (error) {
     console.log("From userController.js...\n", error);
     return res.status(500).json({ Error: error.message });
@@ -164,10 +168,38 @@ const handleRequest = async (req, res) => {
 
 const getAllFriends = async (req, res) => {
   try {
-    const user = await userModel.findOne(req.user._id).populate("friends");
-    // const friends = user.friends;
-    // console.log(friends);
-    return res.status(200).json(user);
+    const { sort, page = 1, limit = 10 } = req.query;
+
+    const options = {
+      select: "name email friends",
+      pagingOptions: {
+        populate: {
+          path: "friends",
+          select: "name email",
+        },
+        sort: { "friends.name": 1 },
+        page: page,
+        limit: limit,
+      },
+    };
+
+    const user = await userModel.paginateSubDocs(
+      { _id: req.user._id },
+      options
+    );
+
+    // console.log(user.friends);
+    //sorting
+    if (sort == "name")
+      user.friends.docs.sort((a, b) => a.name.localeCompare(b.name));
+    else if (sort == "email")
+      user.friends.docs.sort((a, b) => a.email.localeCompare(b.email));
+    else if (sort == "-name")
+      user.friends.docs.sort((a, b) => b.name.localeCompare(a.name));
+    else if (sort == "-email")
+      user.friends.docs.sort((a, b) => b.email.localeCompare(a.email));
+
+    return res.status(200).json({ name: user.name, friends: user.friends });
   } catch (error) {
     console.log("From userController.js...\n", error);
     return res.status(500).json({ Error: error.message });
